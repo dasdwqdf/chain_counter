@@ -7,8 +7,8 @@ import (
 )
 
 type TimingPoint struct {
-	time       int64
-	beatLength float64
+	Time       int64
+	BeatLength float64
 }
 
 func NewTimingPoint(timingSection string) TimingPoint {
@@ -20,7 +20,7 @@ func NewTimingPoint(timingSection string) TimingPoint {
 	beatLength, err := strconv.ParseFloat(args[1], 64)
 	util.CheckError(err)
 
-	return TimingPoint{time: time, beatLength: beatLength}
+	return TimingPoint{Time: time, BeatLength: beatLength}
 }
 
 func IsRedLine(timingSection string) bool {

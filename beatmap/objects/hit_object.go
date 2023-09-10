@@ -7,8 +7,8 @@ import (
 )
 
 type HitObject struct {
-	time       int64
-	objectType []bool
+	Time       int64
+	ObjectType []bool
 }
 
 const (
@@ -48,5 +48,5 @@ func NewHitObject(hitObjectTxt string) HitObject {
 
 	objectType := GetObjectType(args[3])
 
-	return HitObject{time: time, objectType: objectType}
+	return HitObject{Time: time, ObjectType: objectType}
 }
