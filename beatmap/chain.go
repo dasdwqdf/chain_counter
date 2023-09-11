@@ -12,9 +12,34 @@ type Chain struct {
 	size        int
 }
 
-func newChain(hitObjects []objects.HitObject, currentPosition int, beatLength float64, snap float64, minSize int) (int, *Chain) {
+func getBeatLengthAt(time int64, timingPoints []objects.TimingPoint, currentTimingIndex int) (float64, int) {
+	if len(timingPoints) == 1 {
+		return timingPoints[0].BeatLength, 0
+	} else if currentTimingIndex == len(timingPoints)-1 {
+		return timingPoints[currentTimingIndex].BeatLength, currentTimingIndex
+	} else {
+		currentTiming := timingPoints[currentTimingIndex]
+		nextTiming := timingPoints[currentTimingIndex+1]
+
+		for currentTimingIndex < len(timingPoints) && time >= nextTiming.Time-2 {
+			currentTimingIndex++
+			currentTiming = nextTiming
+			if currentTimingIndex+1 < len(timingPoints) {
+				nextTiming = timingPoints[currentTimingIndex+1]
+			}
+		}
+
+		if currentTimingIndex == len(timingPoints) {
+			return currentTiming.BeatLength, currentTimingIndex - 1
+		}
+
+		return currentTiming.BeatLength, currentTimingIndex
+	}
+}
+
+func newChain(hitObjects []objects.HitObject, currentPosition int, timingPoints []objects.TimingPoint, timingPointIndex int, snap float64, minSize int) (int, int, *Chain) {
 	if !(currentPosition+1 < len(hitObjects)) {
-		return currentPosition + 1, nil
+		return currentPosition + 1, 0, nil
 	}
 
 	starTime := hitObjects[currentPosition].Time
@@ -22,8 +47,13 @@ func newChain(hitObjects []objects.HitObject, currentPosition int, beatLength fl
 	currentObject := hitObjects[currentPosition]
 	nextObject := hitObjects[currentPosition+1]
 
+	beatLength, timingPointIndex := getBeatLengthAt(currentObject.Time, timingPoints, timingPointIndex)
 	snapLength := beatLength / snap
 	expectedTime := int64(math.Round(float64(currentObject.Time) + snapLength))
+
+	// if currentObject.Time == 8874 {
+	// 	fmt.Println(timingPointIndex, currentObject.Time, nextObject.Time, expectedTime, snapLength)
+	// }
 
 	for currentPosition < len(hitObjects) && (nextObject.Time >= expectedTime-2 && nextObject.Time <= expectedTime+2) {
 		currentPosition++
@@ -32,6 +62,9 @@ func newChain(hitObjects []objects.HitObject, currentPosition int, beatLength fl
 		if currentPosition+1 < len(hitObjects) {
 			nextObject = hitObjects[currentPosition+1]
 		}
+
+		beatLength, timingPointIndex = getBeatLengthAt(currentObject.Time, timingPoints, timingPointIndex)
+		snapLength := beatLength / snap
 		expectedTime = int64(math.Round(float64(currentObject.Time) + snapLength))
 		// fmt.Println(currentObject.Time, nextObject.Time, expectedTime)
 	}
@@ -40,29 +73,25 @@ func newChain(hitObjects []objects.HitObject, currentPosition int, beatLength fl
 
 	if size >= minSize {
 		// fmt.Println(starTime, endTime, size)
-		return currentPosition + 1, &Chain{snapDivisor: uint8(snap), startTime: starTime, endTime: endTime, size: size}
+		return currentPosition + 1, timingPointIndex, &Chain{snapDivisor: uint8(snap), startTime: starTime, endTime: endTime, size: size}
 	} else {
-		return currentPosition + 1, nil
+		return currentPosition + 1, timingPointIndex, nil
 	}
 }
 
 func GetBeatmapChains(beatmap Beatmap, snap uint8, minSize int) []Chain {
 	chains := []Chain{}
+	timingPointIndex := 0
 
-	if len(beatmap.timingPoints) == 1 {
-		beatLength := beatmap.timingPoints[0].BeatLength
+	for i := 0; i < len(beatmap.hitObjects); {
+		next, currentTimingPoint, chain := newChain(beatmap.hitObjects, i, beatmap.timingPoints, timingPointIndex, float64(snap), minSize)
+		timingPointIndex = currentTimingPoint
 
-		for i := 0; i < len(beatmap.hitObjects); {
-			next, chain := newChain(beatmap.hitObjects, i, beatLength, float64(snap), minSize)
-			if chain != nil {
-				chains = append(chains, *chain)
-			}
-			i = next
+		if chain != nil {
+			chains = append(chains, *chain)
 		}
-
-		return chains
-
-	} else {
-		return nil
+		i = next
 	}
+
+	return chains
 }

@@ -8,5 +8,5 @@ import (
 func main() {
 	beatmap := bmp.ImportBeatmapData("test.osu")
 	// fmt.Println(bmp.GetBeatmapChains(beatmap, 4))
-	fmt.Println(bmp.GetBeatmapChains(beatmap, 4, 3))
+	fmt.Println(bmp.GetBeatmapChains(beatmap, 4, 5))
 }
