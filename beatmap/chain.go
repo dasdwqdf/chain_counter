@@ -51,14 +51,18 @@ func newChain(hitObjects []objects.HitObject, currentPosition int, timingPoints 
 	snapLength := beatLength / snap
 	expectedTime := int64(math.Round(float64(currentObject.Time) + snapLength))
 
-	// if currentObject.Time == 8874 {
-	// 	fmt.Println(timingPointIndex, currentObject.Time, nextObject.Time, expectedTime, snapLength)
-	// }
+	beatLength2, _ := getBeatLengthAt(nextObject.Time, timingPoints, timingPointIndex)
+	snapLength2 := beatLength2 / snap
+	expectedTime2 := int64(math.Round(float64(currentObject.Time) + snapLength2))
 
-	for currentPosition < len(hitObjects) && (nextObject.Time >= expectedTime-2 && nextObject.Time <= expectedTime+2) {
+	isPartOfChain := (nextObject.Time >= expectedTime-2 && nextObject.Time <= expectedTime+2) ||
+		(nextObject.Time >= expectedTime2-2 && nextObject.Time <= expectedTime2+2)
+
+	for currentPosition < len(hitObjects) && isPartOfChain {
 		currentPosition++
 		size++
 		currentObject = nextObject
+
 		if currentPosition+1 < len(hitObjects) {
 			nextObject = hitObjects[currentPosition+1]
 		}
@@ -66,6 +70,18 @@ func newChain(hitObjects []objects.HitObject, currentPosition int, timingPoints 
 		beatLength, timingPointIndex = getBeatLengthAt(currentObject.Time, timingPoints, timingPointIndex)
 		snapLength := beatLength / snap
 		expectedTime = int64(math.Round(float64(currentObject.Time) + snapLength))
+
+		beatLength2, _ = getBeatLengthAt(nextObject.Time, timingPoints, timingPointIndex)
+		snapLength2 = beatLength2 / snap
+		expectedTime2 = int64(math.Round(float64(currentObject.Time) + snapLength2))
+
+		isPartOfChain = (nextObject.Time >= expectedTime-2 && nextObject.Time <= expectedTime+2) ||
+			(nextObject.Time >= expectedTime2-2 && nextObject.Time <= expectedTime2+2)
+
+		// if nextObject.Time == 163311 {
+		// 	fmt.Println(expectedTime, expectedTime2)
+		// }
+
 		// fmt.Println(currentObject.Time, nextObject.Time, expectedTime)
 	}
 
