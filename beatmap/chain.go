@@ -6,10 +6,10 @@ import (
 )
 
 type Chain struct {
-	snapDivisor uint8
-	startTime   int64
-	endTime     int64
-	size        int
+	SnapDivisor uint8 `json:"snap_divisor"`
+	StartTime   int64 `json:"start_time"`
+	EndTime     int64 `json:"end_time"`
+	Size        int   `json:"size"`
 }
 
 func getBeatLengthAt(time int64, timingPoints []objects.TimingPoint, currentTimingIndex int) (float64, int) {
@@ -84,7 +84,7 @@ func newChain(hitObjects []objects.HitObject, currentPosition int, timingPoints 
 	endTime := currentObject.Time
 
 	if size >= minSize {
-		return currentPosition + 1, timingPointIndex, &Chain{snapDivisor: uint8(snap), startTime: starTime, endTime: endTime, size: size}
+		return currentPosition + 1, timingPointIndex, &Chain{SnapDivisor: uint8(snap), StartTime: starTime, EndTime: endTime, Size: size}
 	} else {
 		return currentPosition + 1, timingPointIndex, nil
 	}

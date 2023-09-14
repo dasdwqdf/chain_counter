@@ -2,6 +2,8 @@ package main
 
 import (
 	bmp "chain_counter/beatmap"
+	"chain_counter/util"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -13,8 +15,9 @@ func main() {
 	var snap, minObjects int
 
 	app := &cli.App{
-		Name:  "chain_counter",
-		Usage: "use to count the chains of a beatmap",
+		Name:      "chain_counter",
+		ArgsUsage: "[beatmap_path]",
+		Usage:     "use to count the chains of a beatmap",
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:        "snap",
@@ -32,9 +35,20 @@ func main() {
 			},
 		},
 		Action: func(context *cli.Context) error {
-			beatmap := bmp.ImportBeatmapData(context.Args().First())
-			fmt.Println(bmp.GetBeatmapChains(beatmap, snap, minObjects))
-			return nil
+			if context.Args().Len() == 0 {
+				cli.ShowAppHelp(context)
+				return nil
+
+			} else {
+				beatmap := bmp.ImportBeatmapData(context.Args().First())
+				chains := bmp.GetBeatmapChains(beatmap, snap, minObjects)
+
+				chainsJson, err := json.Marshal(chains)
+				util.CheckError(err)
+
+				fmt.Println(string(chainsJson))
+				return nil
+			}
 		},
 	}
 
