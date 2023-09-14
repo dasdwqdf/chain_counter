@@ -7,6 +7,7 @@ import (
 type Beatmap struct {
 	timingPoints []obj.TimingPoint
 	hitObjects   []obj.HitObject
+	version      string
 }
 
 func CreateTimingPoints(timingPointsTxt []string) []obj.TimingPoint {

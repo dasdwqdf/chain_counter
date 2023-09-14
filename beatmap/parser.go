@@ -3,26 +3,56 @@ package beatmap
 import (
 	"bufio"
 	util "chain_counter/util"
-	"fmt"
+	"errors"
 	"os"
-	"strconv"
+	"slices"
 	"strings"
 )
+
+func getSupportedVersions() []string {
+	return []string{
+		"osu file format v3",
+		"osu file format v4",
+		"osu file format v5",
+		"osu file format v6",
+		"osu file format v7",
+		"osu file format v8",
+		"osu file format v9",
+		"osu file format v10",
+		"osu file format v11",
+		"osu file format v12",
+		"osu file format v13",
+		"osu file format v14"}
+}
 
 func getVersion(version string) string {
 	args := strings.Split(version, " ")
 	return args[3]
 }
 
-func handleVersion(versionTxt, timingPointsTxt, hitObjectsTxt string) Beatmap {
-	version, err := strconv.ParseInt(getVersion(versionTxt), 0, 8)
-	util.CheckError(err)
+func handleVersion(versionTxt string, timingPointsTxt, hitObjectsTxt []string) Beatmap {
+	version := getVersion(versionTxt)
 
-	if version == 3 {
-		return Beatmap{}
+	if version == "v3" {
+		for i, timingTxt := range timingPointsTxt {
+			timingPointsTxt[i] = timingTxt + "1,1,1,1,1,1"
+		}
+
+		return Beatmap{timingPoints: CreateTimingPoints(timingPointsTxt),
+			hitObjects: CreateHitObjects(hitObjectsTxt), version: version}
+
+	} else if version == "v4" {
+		for i, timingTxt := range timingPointsTxt {
+			timingPointsTxt[i] = timingTxt + "1,1,1"
+		}
+
+		return Beatmap{timingPoints: CreateTimingPoints(timingPointsTxt),
+			hitObjects: CreateHitObjects(hitObjectsTxt), version: version}
+
+	} else {
+		return Beatmap{timingPoints: CreateTimingPoints(timingPointsTxt),
+			hitObjects: CreateHitObjects(hitObjectsTxt), version: version}
 	}
-
-	return Beatmap{}
 }
 
 func ImportBeatmapData(fileName string) Beatmap {
@@ -33,39 +63,44 @@ func ImportBeatmapData(fileName string) Beatmap {
 	timingPointsTxt := []string{}
 	hitObjectsTxt := []string{}
 
-	version := ""
-
+	versionTxt := ""
 	if scanner.Scan() {
-		version = scanner.Text()
+		versionTxt = scanner.Text()
+	} else {
+		err = errors.New("empty file")
+		util.CheckError(err)
 	}
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	if !slices.Contains(getSupportedVersions(), versionTxt) {
+		err = errors.New("invalid version")
+		util.CheckError(err)
+	} else {
+		for scanner.Scan() {
+			line := scanner.Text()
 
-		if line == "[TimingPoints]" {
-			for line != "" && scanner.Scan() {
-				line = scanner.Text()
-				timingPointsTxt = append(timingPointsTxt, line)
-			}
-		} else if line == "[HitObjects]" {
-			for scanner.Scan() {
-				line = scanner.Text()
-				hitObjectsTxt = append(hitObjectsTxt, line)
+			if line == "[TimingPoints]" {
+				for line != "" && scanner.Scan() {
+					line = scanner.Text()
+					timingPointsTxt = append(timingPointsTxt, line)
+				}
+			} else if line == "[HitObjects]" {
+				for scanner.Scan() {
+					line = scanner.Text()
+					hitObjectsTxt = append(hitObjectsTxt, line)
+				}
 			}
 		}
-	}
 
-	err = f.Close()
-	util.CheckError(err)
+		err = f.Close()
+		util.CheckError(err)
+	}
 
 	if len(timingPointsTxt) > 0 {
 		timingPointsTxt = timingPointsTxt[:len(timingPointsTxt)-1]
+	} else {
+		err = errors.New("no timing points found")
+		util.CheckError(err)
 	}
 
-	fmt.Println(version, timingPointsTxt, hitObjectsTxt)
-
-	return Beatmap{}
-
-	// return Beatmap{timingPoints: CreateTimingPoints(timingPointsTxt),
-	// 	hitObjects: CreateHitObjects(hitObjectsTxt)}
+	return handleVersion(versionTxt, timingPointsTxt, hitObjectsTxt)
 }
